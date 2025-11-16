@@ -100,7 +100,126 @@ Given that feature description, do this:
 
 5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
 
-6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
+6. **Generate Prolog Formal Specification** from the feature requirements:
+   
+   a. Create `FEATURE_DIR/prolog/domain.pl` with feature-specific domain predicates:
+      
+      - Extract key entities from the spec and model them as Prolog facts/rules
+      - Example: For user authentication feature:
+        ```prolog
+        % Feature: User Authentication
+        % Domain model for authentication feature
+        
+        % User entity
+        user(UserId, Username, PasswordHash) :-
+            atom(UserId),
+            atom(Username),
+            atom(PasswordHash),
+            atom_length(Username, Len),
+            Len >= 3, Len =< 50.
+        
+        % Authentication states
+        auth_state(UserId, State) :-
+            user(UserId, _, _),
+            member(State, [authenticated, unauthenticated, locked]).
+        
+        % Valid authentication attempt
+        valid_auth_attempt(Username, Password) :-
+            atom(Username),
+            atom(Password),
+            atom_length(Password, Len),
+            Len >= 8.
+        ```
+   
+   b. Create `FEATURE_DIR/prolog/constraints.pl` with feature requirement constraints:
+      
+      - Convert functional requirements into constraint-checking predicates
+      - Each requirement should have a corresponding constraint check
+      - Example:
+        ```prolog
+        :- ['domain.pl'].
+        
+        % Requirement: Password must be at least 8 characters
+        check_password_length(Violations) :-
+            findall(UserId,
+                (user(UserId, _, Pass),
+                 atom_length(Pass, Len),
+                 Len < 8),
+                Violations).
+        
+        % Requirement: Usernames must be unique
+        check_username_uniqueness(Violations) :-
+            findall([User1, User2],
+                (user(User1, Name, _),
+                 user(User2, Name, _),
+                 User1 \= User2),
+                Violations).
+        
+        % Main constraint checker
+        check_feature_constraints(Result) :-
+            check_password_length(PasswordViolations),
+            check_username_uniqueness(UniquenessViolations),
+            Result = _{
+                password_violations: PasswordViolations,
+                uniqueness_violations: UniquenessViolations
+            }.
+        ```
+   
+   c. Create `FEATURE_DIR/prolog/scenarios.pl` with test case generators based on acceptance criteria:
+      
+      - Convert acceptance scenarios into Prolog test generators
+      - Generate both valid and invalid test cases
+      - Example:
+        ```prolog
+        :- ['domain.pl'].
+        
+        % Valid authentication scenarios
+        valid_login(Username, Password) :-
+            atom_length(Username, ULen),
+            ULen >= 3, ULen =< 50,
+            atom_length(Password, PLen),
+            PLen >= 8.
+        
+        % Invalid authentication scenarios
+        invalid_login(Username, Password) :-
+            (atom_length(Username, ULen), ULen < 3) ;
+            (atom_length(Password, PLen), PLen < 8).
+        
+        % Generate test cases from user stories
+        generate_story1_tests :-
+            findall(_{type: valid, username: U, password: P},
+                valid_login(U, P),
+                ValidCases),
+            findall(_{type: invalid, username: U2, password: P2},
+                invalid_login(U2, P2),
+                InvalidCases),
+            append(ValidCases, InvalidCases, AllCases),
+            emit_json(_{test_cases: AllCases}).
+        ```
+   
+   d. Create `FEATURE_DIR/prolog/queries.pl` that interfaces with the MCP server:
+      
+      ```prolog
+      :- ['domain.pl', 'constraints.pl', 'scenarios.pl'].
+      :- use_module(library(http/json)).
+      
+      emit_json(Term) :-
+          json_write_dict(current_output, Term),
+          nl.
+      
+      % Check feature constraints
+      check_constraints_json :-
+          check_feature_constraints(Result),
+          emit_json(Result).
+      
+      % Generate test cases for specific user story
+      generate_test_cases(StoryId) :-
+          atom_concat('generate_story', StoryId, Predicate),
+          atom_concat(Predicate, '_tests', Goal),
+          call(Goal).
+      ```
+
+7. **Specification Quality Validation**: After writing the initial spec and Prolog formalization, validate it against quality criteria:
 
    a. **Create Spec Quality Checklist**: Generate a checklist file at `FEATURE_DIR/checklists/requirements.md` using the checklist template structure with these validation items:
 
@@ -192,7 +311,23 @@ Given that feature description, do this:
 
    d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
 
-7. Report completion with branch name, spec file path, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
+8. **Validate Prolog Formalization**: Use the MCP server to validate the generated Prolog files:
+   
+   a. Run `prolog.validate_spec` tool via opencode to check the feature constraints:
+      ```markdown
+      Use the `prolog.validate_spec` tool to validate the feature constraints in FEATURE_DIR/prolog/
+      ```
+   
+   b. If violations are found, review and update the Prolog constraints or specification as needed
+   
+   c. Run `prolog.generate_test_cases` to verify test case generation works:
+      ```markdown
+      Use `prolog.generate_test_cases` with domain="feature" to generate test cases
+      ```
+   
+   d. Document the validation results in the specification under a new "Formal Validation" section
+
+9. Report completion with branch name, spec file path, Prolog files generated (`FEATURE_DIR/prolog/`), checklist results, validation status, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
 
 **NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
 

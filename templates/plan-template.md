@@ -43,7 +43,12 @@ specs/[###-feature]/
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
+├── prolog/              # Formal specification (created by /speckit.specify, extended by /speckit.plan)
+│   ├── domain.pl        # Domain model predicates
+│   ├── constraints.pl   # Constraint checking predicates
+│   ├── scenarios.pl     # Test case generators
+│   ├── api.pl           # API endpoint specifications (if applicable)
+│   └── queries.pl       # MCP interface
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
@@ -64,7 +69,7 @@ src/
 └── lib/
 
 tests/
-├── contract/
+├── contract/            # Prolog-based contract tests (validate API against formal spec)
 ├── integration/
 └── unit/
 
