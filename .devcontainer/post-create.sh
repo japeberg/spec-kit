@@ -83,6 +83,11 @@ echo -e "\n🤖 Installing CodeBuddy CLI..."
 run_command "npm install -g @tencent-ai/codebuddy-code@latest"
 echo "✅ Done"
 
+echo -e "\n🔬 Installing SWI-Prolog (for opencode MCP server)..."
+run_command "sudo apt-get update -qq"
+run_command "sudo apt-get install -y swi-prolog"
+echo "✅ Done"
+
 # Installing UV (Python package manager)
 echo -e "\n🐍 Installing UV - Python Package Manager..."
 run_command "pipx install uv"
