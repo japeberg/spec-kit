@@ -10,14 +10,19 @@ valid_user(UserId, Role) :-
     between(1, 1000, UserId),
     member(Role, [admin, editor, viewer]).
 
-% Generate invalid user scenarios
+% Generate invalid user scenarios - negative or zero IDs
 invalid_user(UserId, Role) :-
-    (UserId =< 0 ; UserId > 1000),
+    between(-10, 0, UserId),
     member(Role, [admin, editor, viewer, invalid_role]).
 
+% Generate invalid user scenarios - ID too large
 invalid_user(UserId, Role) :-
-    between(1, 1000, UserId),
-    \+ member(Role, [admin, editor, viewer]).
+    between(1001, 1010, UserId),
+    member(Role, [admin, editor, viewer]).
+
+% Generate invalid user scenarios - invalid role
+invalid_user(UserId, invalid_role) :-
+    between(1, 10, UserId).
 
 % Add your own scenario generators here
 % For example:

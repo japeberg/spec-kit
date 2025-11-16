@@ -17,7 +17,7 @@ generate_user_cases :-
         (valid_user(U, R), U =< 10),  % Limit to first 10 for brevity
         Valids),
     findall(_{type: invalid, user_id: U2, role: R2},
-        (invalid_user(U2, R2), U2 =< 10 ; U2 > 1000),  % Sample invalid cases
+        invalid_user(U2, R2),  % Get sample invalid cases
         Invalids),
     append(Valids, Invalids, All),
     emit_json(_{test_cases: All}).

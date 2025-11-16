@@ -57,7 +57,7 @@ def run_prolog(goal: str, prolog_files: Optional[List[str]] = None) -> Dict[str,
     """
     prolog_dir = get_prolog_dir()
     
-    # Build command
+    # Build command - use -q for quiet mode
     cmd = ["swipl", "-q"]
     
     # Add file arguments
@@ -68,7 +68,7 @@ def run_prolog(goal: str, prolog_files: Optional[List[str]] = None) -> Dict[str,
                 raise FileNotFoundError(f"Prolog file not found: {file_path}")
             cmd.extend(["-s", str(file_path)])
     
-    # Add goal and halt
+    # Add goal and halt on success
     cmd.extend(["-g", goal, "-t", "halt"])
     
     # Execute
@@ -81,28 +81,36 @@ def run_prolog(goal: str, prolog_files: Optional[List[str]] = None) -> Dict[str,
             timeout=30,  # 30 second timeout
         )
         
-        if proc.returncode != 0:
-            error_msg = proc.stderr.strip() or "Prolog execution failed"
-            return {
-                "error": error_msg,
-                "returncode": proc.returncode,
-                "stdout": proc.stdout.strip()
-            }
+        # Check if there was an error (non-zero exit that's not just Prolog failure)
+        if proc.returncode != 0 and proc.stderr:
+            error_msg = proc.stderr.strip()
+            if error_msg:
+                return {
+                    "error": error_msg,
+                    "returncode": proc.returncode
+                }
         
         # Parse JSON output from stdout
         output_lines = proc.stdout.strip().splitlines()
         if not output_lines:
-            return {"error": "No output from Prolog"}
+            return {"error": "No output from Prolog", "stderr": proc.stderr.strip()}
         
         # Try to parse the last line as JSON
         try:
             result = json.loads(output_lines[-1])
             return result
         except json.JSONDecodeError as e:
-            return {
-                "error": f"Failed to parse Prolog output as JSON: {e}",
-                "raw_output": output_lines[-1] if output_lines else ""
-            }
+            # If we have multiple lines, try to parse all as a single JSON
+            try:
+                full_output = proc.stdout.strip()
+                result = json.loads(full_output)
+                return result
+            except json.JSONDecodeError:
+                return {
+                    "error": f"Failed to parse Prolog output as JSON: {e}",
+                    "raw_output": output_lines[-1] if output_lines else "",
+                    "full_stdout": proc.stdout.strip()[:500]  # First 500 chars
+                }
             
     except subprocess.TimeoutExpired:
         return {"error": "Prolog execution timed out (30s)"}
