@@ -63,10 +63,70 @@ Follow this execution flow:
 
 7. Write the completed constitution back to `/memory/constitution.md` (overwrite).
 
-8. Output a final summary to the user with:
+8. **Generate Prolog Domain Model** from the constitution:
+   
+   a. Create or update `.opencode/mcp-prolog/prolog/constitution.pl` with Prolog predicates that formalize the constitution principles:
+      
+      - For each principle in the constitution, create predicates that encode the rules
+      - Example: If principle "Library-First" states "Every feature starts as a standalone library"
+        ```prolog
+        % Constitution Principle: Library-First
+        valid_feature_structure(FeatureName, Structure) :-
+            Structure = library,
+            atom(FeatureName).
+        
+        % Violation: Feature not implemented as library
+        check_library_first(Violations) :-
+            findall(Feature,
+                (feature(Feature, Structure), Structure \= library),
+                Violations).
+        ```
+      
+      - For governance rules, create constraint-checking predicates
+      - Example: "TDD mandatory: Tests written before implementation"
+        ```prolog
+        % Constitution Principle: Test-First
+        valid_development_order(Feature, Steps) :-
+            Steps = [write_tests, approve_tests, implement],
+            member(write_tests, Steps),
+            nth0(TestIdx, Steps, write_tests),
+            nth0(ImplIdx, Steps, implement),
+            TestIdx < ImplIdx.
+        
+        % Violation: Implementation before tests
+        check_tdd_compliance(Violations) :-
+            findall(Feature,
+                (feature_development(Feature, Steps),
+                 \+ valid_development_order(Feature, Steps)),
+                Violations).
+        ```
+   
+   b. Update `.opencode/mcp-prolog/prolog/constraints.pl` to include the constitution constraint checks:
+      
+      ```prolog
+      % Import constitution rules
+      :- ['constitution.pl'].
+      
+      % Add constitution checks to main constraint checker
+      check_all_constraints(Result) :-
+          check_library_first(LibraryViolations),
+          check_tdd_compliance(TDDViolations),
+          % ... other existing checks ...
+          Result = _{
+              library_first_violations: LibraryViolations,
+              tdd_violations: TDDViolations,
+              % ... other results ...
+          }.
+      ```
+   
+   c. Document the mapping between constitution principles and Prolog predicates in a comment at the top of constitution.pl
+
+9. Output a final summary to the user with:
    - New version and bump rationale.
+   - Path to generated Prolog domain model (`.opencode/mcp-prolog/prolog/constitution.pl`)
+   - Example of using `prolog.validate_spec` to check constitution compliance
    - Any files flagged for manual follow-up.
-   - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update)`).
+   - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update + Prolog formalization)`).
 
 Formatting & Style Requirements:
 

@@ -28,14 +28,14 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 2. **Load design documents**: Read from FEATURE_DIR:
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
-   - **Optional**: data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
+   - **Optional**: data-model.md (entities), prolog/ (formal specs and API validation), research.md (decisions), quickstart.md (test scenarios)
    - Note: Not all projects have all documents. Generate tasks based on what's available.
 
 3. **Execute task generation workflow**:
    - Load plan.md and extract tech stack, libraries, project structure
    - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
    - If data-model.md exists: Extract entities and map to user stories
-   - If contracts/ exists: Map endpoints to user stories
+   - If prolog/ exists: Map Prolog predicates, constraints, and API specs to user stories
    - If research.md exists: Extract decisions for setup tasks
    - Generate tasks organized by user story (see Task Generation Rules below)
    - Generate dependency graph showing user story completion order
@@ -116,9 +116,10 @@ Every task MUST strictly follow this format:
      - If tests requested: Tests specific to that story
    - Mark story dependencies (most stories should be independent)
 
-2. **From Contracts**:
-   - Map each contract/endpoint → to the user story it serves
-   - If tests requested: Each contract → contract test task [P] before implementation in that story's phase
+2. **From Prolog Formal Specifications**:
+   - Map each Prolog constraint/API spec → to the user story it serves
+   - If tests requested: Each Prolog constraint → contract test task [P] before implementation in that story's phase
+   - API predicates from prolog/api.pl → generate contract tests that validate against formal spec
 
 3. **From Data Model**:
    - Map each entity to the user story(ies) that need it

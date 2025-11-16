@@ -36,7 +36,7 @@ Specify supports multiple AI agents by generating agent-specific command files a
 | **GitHub Copilot** | `.github/agents/` | Markdown | N/A (IDE-based) | GitHub Copilot in VS Code |
 | **Cursor** | `.cursor/commands/` | Markdown | `cursor-agent` | Cursor CLI |
 | **Qwen Code** | `.qwen/commands/` | TOML | `qwen` | Alibaba's Qwen Code CLI |
-| **opencode** | `.opencode/command/` | Markdown | `opencode` | opencode CLI |
+| **opencode** | `.opencode/command/` | Markdown | `opencode` | opencode CLI with Prolog MCP server support |
 | **Codex CLI** | `.codex/commands/` | Markdown | `codex` | Codex CLI |
 | **Windsurf** | `.windsurf/workflows/` | Markdown | N/A (IDE-based) | Windsurf IDE workflows |
 | **Kilo Code** | `.kilocode/rules/` | Markdown | N/A (IDE-based) | Kilo Code IDE |
@@ -407,3 +407,109 @@ When adding new agents:
 ---
 
 *This documentation should be updated whenever new agents are added to maintain accuracy and completeness.*
+
+---
+
+## Prolog MCP Server for opencode
+
+The **opencode** agent includes an optional Prolog MCP (Model Context Protocol) server for formal validation and test case generation. This allows you to use Prolog-based logic to validate specifications and generate comprehensive test cases.
+
+### What is the Prolog MCP Server?
+
+The Prolog MCP server provides three main tools accessible from opencode:
+
+1. **`prolog.validate_spec`** - Validate domain constraints using Prolog rules
+2. **`prolog.generate_test_cases`** - Generate test cases based on Prolog scenarios
+3. **`prolog.query`** - Execute arbitrary Prolog queries (advanced)
+
+### Directory Structure
+
+When you initialize a project with opencode, the following structure is created:
+
+```text
+.opencode/
+├── command/              # opencode slash commands
+│   └── speckit.*.md
+├── mcp-prolog/          # Prolog MCP server
+│   ├── server.py        # MCP server implementation (Python)
+│   ├── prolog/
+│   │   ├── domain.pl       # Domain model definitions
+│   │   ├── constraints.pl  # Validation rules
+│   │   ├── scenarios.pl    # Test case generators
+│   │   └── queries.pl      # MCP query interface
+│   ├── mcp.json         # MCP configuration
+│   └── README.md        # Detailed documentation
+```
+
+### Prerequisites
+
+To use the Prolog MCP server, you need:
+
+1. **SWI-Prolog** - Install via:
+   - Linux (Debian/Ubuntu): `sudo apt-get install swi-prolog`
+   - macOS: `brew install swi-prolog`
+   - Windows: Download from <https://www.swi-prolog.org/download/stable>
+
+2. **Python 3.7+** - Usually pre-installed on most systems
+
+### Setup
+
+The MCP server is automatically configured when you initialize an opencode project. To verify:
+
+```bash
+# Check SWI-Prolog is installed
+swipl --version
+
+# Test the MCP server
+cd .opencode/mcp-prolog
+python3 server.py
+# Press Ctrl+C to exit
+```
+
+### Usage from opencode
+
+Once configured, you can use Prolog tools in your opencode prompts:
+
+**Example prompts:**
+
+> "Use the `prolog.validate_spec` tool to check if there are any constraint violations in the current domain model."
+
+> "Use `prolog.generate_test_cases` for the 'users' domain to get boundary test cases for our implementation."
+
+> "Query the Prolog model to check if user 42 with role 'admin' can delete: use `prolog.query` with 'can_delete(42)'."
+
+### Customizing the Prolog Model
+
+The Prolog files in `.opencode/mcp-prolog/prolog/` define your domain model:
+
+- **`domain.pl`** - Core domain concepts, entities, and business rules
+- **`constraints.pl`** - Invariants and validation rules  
+- **`scenarios.pl`** - Test case generators for valid/invalid inputs
+- **`queries.pl`** - Query predicates that interface with the MCP server
+
+You can customize these files to match your project's specific domain and requirements. See the README in `.opencode/mcp-prolog/` for detailed examples.
+
+### When to Use Prolog MCP
+
+The Prolog MCP server is particularly useful for:
+
+- **Formal specification validation** - Check that your implementation satisfies domain invariants
+- **Comprehensive test generation** - Generate edge cases and boundary conditions automatically
+- **Complex business rules** - Express intricate logic declaratively in Prolog
+- **Spec-driven development** - Ensure code matches specifications by validating against formal models
+
+### Troubleshooting
+
+If the MCP server isn't working:
+
+1. Verify SWI-Prolog is installed: `which swipl`
+2. Check Python 3 is available: `python3 --version`
+3. Test Prolog files directly: `cd .opencode/mcp-prolog/prolog && swipl -s queries.pl -g "check_constraints_json" -t halt`
+4. Review the detailed README in `.opencode/mcp-prolog/README.md`
+
+### Resources
+
+- [SWI-Prolog Documentation](https://www.swi-prolog.org/pldoc/doc_for?object=manual)
+- [Model Context Protocol](https://spec.modelcontextprotocol.io/)
+- [opencode MCP Documentation](https://opencode.ai/docs/mcp-servers)
+

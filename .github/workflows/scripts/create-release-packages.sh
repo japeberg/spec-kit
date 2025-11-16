@@ -183,7 +183,14 @@ build_variant() {
       [[ -f agent_templates/qwen/QWEN.md ]] && cp agent_templates/qwen/QWEN.md "$base_dir/QWEN.md" ;;
     opencode)
       mkdir -p "$base_dir/.opencode/command"
-      generate_commands opencode md "\$ARGUMENTS" "$base_dir/.opencode/command" "$script" ;;
+      generate_commands opencode md "\$ARGUMENTS" "$base_dir/.opencode/command" "$script"
+      # Copy Prolog MCP server for opencode
+      if [[ -d templates/mcp-prolog ]]; then
+        mkdir -p "$base_dir/.opencode/mcp-prolog"
+        cp -r templates/mcp-prolog/* "$base_dir/.opencode/mcp-prolog/"
+        echo "Copied Prolog MCP server to .opencode/mcp-prolog"
+      fi
+      ;;
     windsurf)
       mkdir -p "$base_dir/.windsurf/workflows"
       generate_commands windsurf md "\$ARGUMENTS" "$base_dir/.windsurf/workflows" "$script" ;;

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "prolog-spec": {
+      "command": "python3",
+      "args": [
+        ".opencode/mcp-prolog/server.py"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

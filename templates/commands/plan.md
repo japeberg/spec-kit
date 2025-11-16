@@ -35,7 +35,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Fill Constitution Check section from constitution
    - Evaluate gates (ERROR if violations unjustified)
    - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)
-   - Phase 1: Generate data-model.md, contracts/, quickstart.md
+   - Phase 1: Generate data-model.md, extend Prolog formal model in `FEATURE_DIR/prolog/`, quickstart.md
    - Phase 1: Update agent context by running the agent script
    - Re-evaluate Constitution Check post-design
 
@@ -66,7 +66,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
-### Phase 1: Design & Contracts
+### Phase 1: Design & Formal Specification
 
 **Prerequisites:** `research.md` complete
 
@@ -75,10 +75,26 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Validation rules from requirements
    - State transitions if applicable
 
-2. **Generate API contracts** from functional requirements:
-   - For each user action → endpoint
-   - Use standard REST/GraphQL patterns
-   - Output OpenAPI/GraphQL schema to `/contracts/`
+2. **Generate or extend Prolog formal model** (if not exists or needs update):
+   - Load existing `FEATURE_DIR/prolog/domain.pl` (created by `/speckit.specify`)
+   - Add implementation-specific predicates based on technical decisions from research.md
+   - Update `FEATURE_DIR/prolog/constraints.pl` with architectural constraints
+   - If feature involves APIs, create `FEATURE_DIR/prolog/api.pl` with endpoint specifications:
+     ```prolog
+     % API Endpoint: POST /api/users
+     valid_request(post, '/api/users', Body) :-
+         Body = _{username: U, password: P},
+         atom(U), atom(P),
+         atom_length(P, Len), Len >= 8.
+     
+     valid_response(post, '/api/users', 201, Body) :-
+         Body = _{user_id: Id, username: U},
+         atom(Id), atom(U).
+     
+     % Link to requirement
+     satisfies_requirement(api_create_user, 'FR-001', 'Users can register with username and password').
+     ```
+   - Validate model against constitution using `prolog.validate_spec`
 
 3. **Agent context update**:
    - Run `{AGENT_SCRIPT}`
@@ -87,7 +103,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Add only new technology from current plan
    - Preserve manual additions between markers
 
-**Output**: data-model.md, /contracts/*, quickstart.md, agent-specific file
+**Output**: data-model.md, updated Prolog model in `FEATURE_DIR/prolog/`, quickstart.md, agent-specific file
 
 ## Key rules
 
